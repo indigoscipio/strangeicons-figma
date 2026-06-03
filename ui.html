@@ -7,6 +7,7 @@
 <body>
   <div class="header">
     <h1>Strange Icons</h1>
+    <span class="version-badge">v3.1</span>
     <button id="close">&times;</button>
   </div>
 
@@ -24,6 +25,14 @@
   <div id="sprite-sheet" style="display:none"></div>
   <div id="icon-grid"></div>
 
+  <div class="footer">
+    <span class="footer-copy">&copy; 2026 strangeicons</span>
+    <nav class="footer-links">
+      <a href="https://github.com/indigoscipio/strangeicons-v3" target="_blank">GitHub</a>
+      <a href="https://opensource.org/license/mit" target="_blank">License</a>
+    </nav>
+  </div>
+
   <script>
     const BASE = "https://strangeicons.com";
     const FAMILIES = ["asklepios", "freud", "nightingale", "osler", "sandow", "turing"];
@@ -33,6 +42,7 @@
     let currentFamily = FAMILIES[0];
     let currentStyle = STYLES[0];
     let spriteCache = {};
+    let selectedCell = null;
 
     const familySelect = document.getElementById("family-select");
     const styleSelect = document.getElementById("style-select");
@@ -83,7 +93,7 @@
 
     async function fetchJSON(url) {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
+      if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
     }
 
@@ -92,7 +102,7 @@
       if (spriteCache[key]) return spriteCache[key];
       const url = BASE + "/sprites/" + key + ".svg";
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
+      if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
       spriteCache[key] = text;
       return text;
@@ -106,22 +116,41 @@
       const doc = parser.parseFromString(svgText, "image/svg+xml");
       const symbols = doc.querySelectorAll("symbol");
       spriteSheet.innerHTML = "";
-      symbols.forEach((sym) => spriteSheet.appendChild(sym.cloneNode(true)));
+      symbols.forEach(function (sym) {
+        spriteSheet.appendChild(sym.cloneNode(true));
+      });
     }
 
     function getSvgSource(family, style, name) {
       const id = family + "/" + style + "/" + name;
-      const symbol = spriteSheet.querySelector("#" + CSS.escape(id));
+      var symbol = null;
+      var kids = spriteSheet.children;
+      for (var i = 0; i < kids.length; i++) {
+        if (kids[i].getAttribute("id") === id) {
+          symbol = kids[i];
+          break;
+        }
+      }
       if (!symbol) return null;
       return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
         symbol.innerHTML + "</svg>";
     }
 
+    function insertIcon(family, style, name) {
+      var svgSource = getSvgSource(family, style, name);
+      if (svgSource) {
+        parent.postMessage(
+          { pluginMessage: { type: "insert-icon", svg: svgSource } },
+          "*"
+        );
+      }
+    }
+
     function renderGrid() {
-      const q = searchInput.value.toLowerCase().trim();
-      let filtered = icons.filter((ic) => ic.family === currentFamily);
+      var q = searchInput.value.toLowerCase().trim();
+      var filtered = icons.filter(function (ic) { return ic.family === currentFamily; });
       if (q) {
-        filtered = filtered.filter((ic) => ic.name.includes(q));
+        filtered = filtered.filter(function (ic) { return ic.name.includes(q); });
       }
       if (!filtered.length) {
         iconGrid.innerHTML = "";
@@ -130,37 +159,57 @@
       }
       setEmpty(false);
       injectSymbols(currentFamily, currentStyle);
-      const frag = document.createDocumentFragment();
-      for (const ic of filtered) {
-        const cell = document.createElement("div");
-        cell.className = "icon-cell";
-        const ns = "http://www.w3.org/2000/svg";
-        const use = document.createElementNS(ns, "use");
-        use.setAttributeNS(
-          "http://www.w3.org/1999/xlink",
-          "href",
-          "#" + currentFamily + "/" + currentStyle + "/" + ic.name
-        );
-        const svg = document.createElementNS(ns, "svg");
-        svg.setAttribute("viewBox", "0 0 24 24");
-        svg.setAttribute("width", "24");
-        svg.setAttribute("height", "24");
-        svg.appendChild(use);
-        cell.appendChild(svg);
-        const label = document.createElement("span");
-        label.className = "icon-name";
-        label.textContent = ic.name;
-        cell.appendChild(label);
-        cell.addEventListener("click", function () {
-          const svgSource = getSvgSource(currentFamily, currentStyle, ic.name);
-          if (svgSource) {
-            parent.postMessage(
-              { pluginMessage: { type: "insert-icon", svg: svgSource } },
-              "*"
-            );
-          }
-        });
-        frag.appendChild(cell);
+      var frag = document.createDocumentFragment();
+      for (var i = 0; i < filtered.length; i++) {
+        var ic = filtered[i];
+        (function (icon) {
+          var cell = document.createElement("div");
+          cell.className = "icon-cell";
+          cell.setAttribute("draggable", "true");
+          cell.setAttribute("data-family", icon.family);
+          cell.setAttribute("data-style", currentStyle);
+          cell.setAttribute("data-name", icon.name);
+
+          var ns = "http://www.w3.org/2000/svg";
+          var use = document.createElementNS(ns, "use");
+          use.setAttributeNS(
+            "http://www.w3.org/1999/xlink",
+            "href",
+            "#" + icon.family + "/" + currentStyle + "/" + icon.name
+          );
+          var svg = document.createElementNS(ns, "svg");
+          svg.setAttribute("viewBox", "0 0 24 24");
+          svg.setAttribute("width", "26");
+          svg.setAttribute("height", "26");
+          svg.appendChild(use);
+          cell.appendChild(svg);
+
+          var label = document.createElement("span");
+          label.className = "icon-name";
+          label.textContent = icon.name;
+          cell.appendChild(label);
+
+          // Click to insert
+          cell.addEventListener("click", function () {
+            if (selectedCell) selectedCell.classList.remove("selected");
+            cell.classList.add("selected");
+            selectedCell = cell;
+            insertIcon(icon.family, currentStyle, icon.name);
+          });
+
+          // Drag to insert
+          cell.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", icon.name);
+            cell.style.opacity = "0.6";
+          });
+
+          cell.addEventListener("dragend", function () {
+            cell.style.opacity = "";
+            insertIcon(icon.family, currentStyle, icon.name);
+          });
+
+          frag.appendChild(cell);
+        })(ic);
       }
       iconGrid.innerHTML = "";
       iconGrid.appendChild(frag);
@@ -171,7 +220,7 @@
       try {
         icons = await fetchJSON(BASE + "/icons.json");
       } catch (e) {
-        setError("Failed to load icons: " + e.message);
+        setError("Failed to load icons");
         return;
       }
       setLoading(false);
@@ -183,7 +232,7 @@
       try {
         await fetchSprite(currentFamily, currentStyle);
       } catch (e) {
-        setError("Failed to load sprite: " + e.message);
+        setError("Failed to load icons");
         return;
       }
       setLoading(false);
@@ -192,11 +241,13 @@
 
     familySelect.addEventListener("change", function () {
       currentFamily = this.value;
+      selectedCell = null;
       loadSpriteAndRender();
     });
 
     styleSelect.addEventListener("change", function () {
       currentStyle = this.value;
+      selectedCell = null;
       loadSpriteAndRender();
     });
 
@@ -204,6 +255,17 @@
 
     document.getElementById("close").addEventListener("click", function () {
       parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "/" && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+      }
+      if (e.key === "Escape") {
+        searchInput.blur();
+      }
     });
 
     loadIcons();
