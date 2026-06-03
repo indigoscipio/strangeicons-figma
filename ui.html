@@ -27,6 +27,7 @@
       display: flex;
       flex-direction: column;
       -webkit-font-smoothing: antialiased;
+      position: relative;
     }
     .header {
       display: flex;
@@ -105,7 +106,8 @@
       overflow-y: auto;
       padding: 6px 10px;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: auto;
       gap: 3px;
     }
     .icon-cell {
@@ -164,6 +166,19 @@
       transition: color 0.12s;
     }
     .footer-links a:hover { color: var(--text-primary); }
+    #resize-handle {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 14px;
+      height: 14px;
+      cursor: nwse-resize;
+      z-index: 10;
+      opacity: 0.5;
+      transition: opacity 0.12s;
+    }
+    #resize-handle:hover { opacity: 1; }
+    #resize-handle svg { display: block; }
     #icon-grid::-webkit-scrollbar { width: 6px; }
     #icon-grid::-webkit-scrollbar-track { background: transparent; }
     #icon-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -197,6 +212,14 @@
       <a href="https://github.com/indigoscipio/strangeicons-v3" target="_blank">GitHub</a>
       <a href="https://opensource.org/license/mit" target="_blank">License</a>
     </nav>
+  </div>
+
+  <div id="resize-handle">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M14 0v14H0l14-14z" fill="var(--surface)" />
+      <path d="M6 14H3L14 3v3L6 14z" fill="var(--border-hover)" />
+      <path d="M10 14H7L14 7v3l-4 4z" fill="var(--border-hover)" />
+    </svg>
   </div>
 
   <script>
@@ -398,6 +421,23 @@
       if (e.key === "Escape") {
         searchInput.blur();
       }
+    });
+
+    // Resize handle
+    var handle = document.getElementById("resize-handle");
+    handle.addEventListener("pointerdown", function (e) {
+      handle.setPointerCapture(e.pointerId);
+      function onMove(ev) {
+        var w = Math.max(240, Math.round(ev.clientX + 2));
+        var h = Math.max(200, Math.round(ev.clientY + 2));
+        parent.postMessage({ pluginMessage: { type: "resize", width: w, height: h } }, "*");
+      }
+      function onUp() {
+        handle.removeEventListener("pointermove", onMove);
+        handle.removeEventListener("pointerup", onUp);
+      }
+      handle.addEventListener("pointermove", onMove);
+      handle.addEventListener("pointerup", onUp);
     });
 
     loadIcons();
