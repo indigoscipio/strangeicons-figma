@@ -2,13 +2,189 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --border: #e8e8e4;
+      --border-hover: #c8c8c0;
+      --text-primary: #1a1a18;
+      --text-muted: #8a8a80;
+      --text-subtle: #b8b8b0;
+      --accent: #1a1a18;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      color: var(--text-primary);
+      background: var(--bg);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      border-bottom-right-radius: var(--radius-lg);
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .version-badge {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-primary);
+      border: 1px solid var(--accent);
+      border-top-left-radius: var(--radius-sm);
+      padding: 1px 4px;
+      line-height: 1.3;
+      margin-left: auto;
+    }
+    .filters {
+      display: flex;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .filters select {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 0 var(--radius-md) 0 0;
+      background: var(--surface);
+      color: var(--text-primary);
+      cursor: pointer;
+      appearance: auto;
+      transition: border-color 0.12s;
+    }
+    .filters select:focus { outline: none; border-color: var(--accent); }
+    .filters select:hover { border-color: var(--border-hover); }
+    #search {
+      margin: 0 12px 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 0 var(--radius-md) 0 0;
+      background: var(--surface);
+      color: var(--text-primary);
+      flex-shrink: 0;
+      width: calc(100% - 24px);
+      transition: border-color 0.12s;
+    }
+    #search:focus { outline: none; border-color: var(--accent); }
+    #search::placeholder { color: var(--text-subtle); }
+    #loading, #error, #empty {
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    #error { color: #c0392b; }
+    #icon-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 4px;
+    }
+    .icon-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 4px 8px;
+      border-radius: 0 0 var(--radius-lg) 0;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: border-color 0.12s, box-shadow 0.12s, transform 0.1s, background 0.12s;
+      min-height: 68px;
+      background: transparent;
+      user-select: none;
+    }
+    .icon-cell:hover {
+      background: var(--surface);
+      border-color: var(--border);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+    .icon-cell.selected {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+    .icon-cell svg {
+      width: 26px;
+      height: 26px;
+      display: block;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+    .icon-cell .icon-name {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+      pointer-events: none;
+    }
+    .footer {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      padding: 8px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .footer-copy {
+      font-size: 11px;
+      color: var(--text-subtle);
+    }
+    .footer-links {
+      display: flex;
+      gap: 10px;
+      margin-left: auto;
+    }
+    .footer-links a {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.12s;
+    }
+    .footer-links a:hover { color: var(--text-primary); }
+    #icon-grid::-webkit-scrollbar { width: 6px; }
+    #icon-grid::-webkit-scrollbar-track { background: transparent; }
+    #icon-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    #icon-grid::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+  </style>
 </head>
 <body>
   <div class="header">
     <h1>Strange Icons</h1>
     <span class="version-badge">v3.1</span>
-    <button id="close">&times;</button>
   </div>
 
   <div class="filters">
@@ -53,15 +229,15 @@
     const errorEl = document.getElementById("error");
     const emptyEl = document.getElementById("empty");
 
-    FAMILIES.forEach((f) => {
-      const opt = document.createElement("option");
+    FAMILIES.forEach(function (f) {
+      var opt = document.createElement("option");
       opt.value = f;
       opt.textContent = f.charAt(0).toUpperCase() + f.slice(1);
       familySelect.appendChild(opt);
     });
 
-    STYLES.forEach((s) => {
-      const opt = document.createElement("option");
+    STYLES.forEach(function (s) {
+      var opt = document.createElement("option");
       opt.value = s;
       opt.textContent = s.charAt(0).toUpperCase() + s.slice(1);
       styleSelect.appendChild(opt);
@@ -92,29 +268,29 @@
     }
 
     async function fetchJSON(url) {
-      const res = await fetch(url);
+      var res = await fetch(url);
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
     }
 
     async function fetchSprite(family, style) {
-      const key = family + "-" + style;
+      var key = family + "-" + style;
       if (spriteCache[key]) return spriteCache[key];
-      const url = BASE + "/sprites/" + key + ".svg";
-      const res = await fetch(url);
+      var url = BASE + "/sprites/" + key + ".svg";
+      var res = await fetch(url);
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const text = await res.text();
+      var text = await res.text();
       spriteCache[key] = text;
       return text;
     }
 
     function injectSymbols(family, style) {
-      const key = family + "-" + style;
-      const svgText = spriteCache[key];
+      var key = family + "-" + style;
+      var svgText = spriteCache[key];
       if (!svgText) return;
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgText, "image/svg+xml");
-      const symbols = doc.querySelectorAll("symbol");
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(svgText, "image/svg+xml");
+      var symbols = doc.querySelectorAll("symbol");
       spriteSheet.innerHTML = "";
       symbols.forEach(function (sym) {
         spriteSheet.appendChild(sym.cloneNode(true));
@@ -122,27 +298,21 @@
     }
 
     function getSvgSource(family, style, name) {
-      const id = family + "/" + style + "/" + name;
-      var symbol = null;
+      var id = family + "/" + style + "/" + name;
       var kids = spriteSheet.children;
       for (var i = 0; i < kids.length; i++) {
         if (kids[i].getAttribute("id") === id) {
-          symbol = kids[i];
-          break;
+          return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+            kids[i].innerHTML + "</svg>";
         }
       }
-      if (!symbol) return null;
-      return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
-        symbol.innerHTML + "</svg>";
+      return null;
     }
 
     function insertIcon(family, style, name) {
-      var svgSource = getSvgSource(family, style, name);
-      if (svgSource) {
-        parent.postMessage(
-          { pluginMessage: { type: "insert-icon", svg: svgSource } },
-          "*"
-        );
+      var svg = getSvgSource(family, style, name);
+      if (svg) {
+        parent.postMessage({ pluginMessage: { type: "insert-icon", svg: svg } }, "*");
       }
     }
 
@@ -159,60 +329,38 @@
       }
       setEmpty(false);
       injectSymbols(currentFamily, currentStyle);
-      var frag = document.createDocumentFragment();
+
+      var html = "";
       for (var i = 0; i < filtered.length; i++) {
         var ic = filtered[i];
-        (function (icon) {
-          var cell = document.createElement("div");
-          cell.className = "icon-cell";
-          cell.setAttribute("draggable", "true");
-          cell.setAttribute("data-family", icon.family);
-          cell.setAttribute("data-style", currentStyle);
-          cell.setAttribute("data-name", icon.name);
+        html += '<div class="icon-cell" draggable="true" data-name="' + ic.name + '">';
+        html += '<svg viewBox="0 0 24 24" width="26" height="26">';
+        html += '<use href="#' + ic.family + '/' + currentStyle + '/' + ic.name + '"/>';
+        html += '</svg>';
+        html += '<span class="icon-name">' + ic.name + '</span>';
+        html += '</div>';
+      }
+      iconGrid.innerHTML = html;
 
-          var ns = "http://www.w3.org/2000/svg";
-          var use = document.createElementNS(ns, "use");
-          use.setAttributeNS(
-            "http://www.w3.org/1999/xlink",
-            "href",
-            "#" + icon.family + "/" + currentStyle + "/" + icon.name
-          );
-          var svg = document.createElementNS(ns, "svg");
-          svg.setAttribute("viewBox", "0 0 24 24");
-          svg.setAttribute("width", "26");
-          svg.setAttribute("height", "26");
-          svg.appendChild(use);
-          cell.appendChild(svg);
-
-          var label = document.createElement("span");
-          label.className = "icon-name";
-          label.textContent = icon.name;
-          cell.appendChild(label);
-
-          // Click to insert
+      var cells = iconGrid.children;
+      for (var j = 0; j < cells.length; j++) {
+        (function (cell) {
           cell.addEventListener("click", function () {
             if (selectedCell) selectedCell.classList.remove("selected");
             cell.classList.add("selected");
             selectedCell = cell;
-            insertIcon(icon.family, currentStyle, icon.name);
+            insertIcon(currentFamily, currentStyle, cell.getAttribute("data-name"));
           });
-
-          // Drag to insert
           cell.addEventListener("dragstart", function (e) {
-            e.dataTransfer.setData("text/plain", icon.name);
+            e.dataTransfer.setData("text/plain", cell.getAttribute("data-name"));
             cell.style.opacity = "0.6";
           });
-
           cell.addEventListener("dragend", function () {
             cell.style.opacity = "";
-            insertIcon(icon.family, currentStyle, icon.name);
+            insertIcon(currentFamily, currentStyle, cell.getAttribute("data-name"));
           });
-
-          frag.appendChild(cell);
-        })(ic);
+        })(cells[j]);
       }
-      iconGrid.innerHTML = "";
-      iconGrid.appendChild(frag);
     }
 
     async function loadIcons() {
@@ -253,11 +401,6 @@
 
     searchInput.addEventListener("input", renderGrid);
 
-    document.getElementById("close").addEventListener("click", function () {
-      parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
-    });
-
-    // Keyboard shortcuts
     document.addEventListener("keydown", function (e) {
       if (e.key === "/" && document.activeElement !== searchInput) {
         e.preventDefault();
