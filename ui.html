@@ -368,9 +368,18 @@
             e.dataTransfer.setData("text/plain", cell.getAttribute("data-name"));
             cell.style.opacity = "0.6";
           });
-          cell.addEventListener("dragend", function () {
+          cell.addEventListener("dragend", function (e) {
             cell.style.opacity = "";
-            insertIcon(currentFamily, currentStyle, cell.getAttribute("data-name"));
+            var svg = getSvgSource(currentFamily, currentStyle, cell.getAttribute("data-name"));
+            if (svg) {
+              window.parent.postMessage({
+                pluginDrop: {
+                  clientX: e.clientX,
+                  clientY: e.clientY,
+                  items: [{ type: "image/svg+xml", data: svg }]
+                }
+              }, "*");
+            }
           });
         })(cells[j]);
       }

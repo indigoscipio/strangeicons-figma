@@ -48,3 +48,16 @@ figma.ui.onmessage = (msg) => {
     figma.closePlugin();
   }
 };
+
+figma.on("drop", (event) => {
+  const item = event.items.find((i) => i.type === "image/svg+xml");
+  if (!item) return false;
+  const node = figma.createNodeFromSvg(item.data);
+  node.x = event.absoluteX - node.width / 2;
+  node.y = event.absoluteY - node.height / 2;
+  figma.currentPage.appendChild(node);
+  figma.currentPage.selection = [node];
+  return false;
+});
+
+
