@@ -36,6 +36,8 @@ figma.ui.onmessage = (msg) => {
       figma.currentPage.appendChild(node);
       positionAtViewportCenter(node);
     }
+
+    figma.currentPage.selection = [node];
   }
 
   if (msg.type === "resize") {
