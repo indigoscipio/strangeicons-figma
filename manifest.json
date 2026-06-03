@@ -1,0 +1,14 @@
+{
+  "name": "strangeicons-figma",
+  "id": "1397098247196426197",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": ["figma"],
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": ["https://strangeicons.com"]
+  }
+}

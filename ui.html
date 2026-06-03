@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="header">
+    <h1>Strange Icons</h1>
+    <button id="close">&times;</button>
+  </div>
+
+  <div class="filters">
+    <select id="family-select"></select>
+    <select id="style-select"></select>
+  </div>
+
+  <input type="text" id="search" placeholder="Search icons..." />
+
+  <div id="loading">Loading icons...</div>
+  <div id="error" style="display:none"></div>
+  <div id="empty" style="display:none">No icons found</div>
+
+  <div id="sprite-sheet" style="display:none"></div>
+  <div id="icon-grid"></div>
+
+  <script>
+    const BASE = "https://strangeicons.com";
+    const FAMILIES = ["asklepios", "freud", "nightingale", "osler", "sandow", "turing"];
+    const STYLES = ["bold", "duoline", "duotone", "fill", "light", "regular"];
+
+    let icons = [];
+    let currentFamily = FAMILIES[0];
+    let currentStyle = STYLES[0];
+    let spriteCache = {};
+
+    const familySelect = document.getElementById("family-select");
+    const styleSelect = document.getElementById("style-select");
+    const searchInput = document.getElementById("search");
+    const iconGrid = document.getElementById("icon-grid");
+    const spriteSheet = document.getElementById("sprite-sheet");
+    const loadingEl = document.getElementById("loading");
+    const errorEl = document.getElementById("error");
+    const emptyEl = document.getElementById("empty");
+
+    FAMILIES.forEach((f) => {
+      const opt = document.createElement("option");
+      opt.value = f;
+      opt.textContent = f.charAt(0).toUpperCase() + f.slice(1);
+      familySelect.appendChild(opt);
+    });
+
+    STYLES.forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+      styleSelect.appendChild(opt);
+    });
+
+    function show(el) { if (el) el.style.display = ""; }
+    function hide(el) { if (el) el.style.display = "none"; }
+
+    function setLoading(v) {
+      if (v) { show(loadingEl); hide(errorEl); hide(emptyEl); }
+      else { hide(loadingEl); }
+    }
+
+    function setError(msg) {
+      if (msg) {
+        errorEl.textContent = msg;
+        show(errorEl);
+        hide(loadingEl);
+        hide(emptyEl);
+      } else {
+        hide(errorEl);
+      }
+    }
+
+    function setEmpty(v) {
+      if (v) { show(emptyEl); hide(loadingEl); hide(errorEl); }
+      else { hide(emptyEl); }
+    }
+
+    async function fetchJSON(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
+      return res.json();
+    }
+
+    async function fetchSprite(family, style) {
+      const key = family + "-" + style;
+      if (spriteCache[key]) return spriteCache[key];
+      const url = BASE + "/sprites/" + key + ".svg";
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
+      const text = await res.text();
+      spriteCache[key] = text;
+      return text;
+    }
+
+    function injectSymbols(family, style) {
+      const key = family + "-" + style;
+      const svgText = spriteCache[key];
+      if (!svgText) return;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText, "image/svg+xml");
+      const symbols = doc.querySelectorAll("symbol");
+      spriteSheet.innerHTML = "";
+      symbols.forEach((sym) => spriteSheet.appendChild(sym.cloneNode(true)));
+    }
+
+    function getSvgSource(family, style, name) {
+      const id = family + "/" + style + "/" + name;
+      const symbol = spriteSheet.querySelector("#" + CSS.escape(id));
+      if (!symbol) return null;
+      return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+        symbol.innerHTML + "</svg>";
+    }
+
+    function renderGrid() {
+      const q = searchInput.value.toLowerCase().trim();
+      let filtered = icons.filter((ic) => ic.family === currentFamily);
+      if (q) {
+        filtered = filtered.filter((ic) => ic.name.includes(q));
+      }
+      if (!filtered.length) {
+        iconGrid.innerHTML = "";
+        setEmpty(true);
+        return;
+      }
+      setEmpty(false);
+      injectSymbols(currentFamily, currentStyle);
+      const frag = document.createDocumentFragment();
+      for (const ic of filtered) {
+        const cell = document.createElement("div");
+        cell.className = "icon-cell";
+        const ns = "http://www.w3.org/2000/svg";
+        const use = document.createElementNS(ns, "use");
+        use.setAttributeNS(
+          "http://www.w3.org/1999/xlink",
+          "href",
+          "#" + currentFamily + "/" + currentStyle + "/" + ic.name
+        );
+        const svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("width", "24");
+        svg.setAttribute("height", "24");
+        svg.appendChild(use);
+        cell.appendChild(svg);
+        const label = document.createElement("span");
+        label.className = "icon-name";
+        label.textContent = ic.name;
+        cell.appendChild(label);
+        cell.addEventListener("click", function () {
+          const svgSource = getSvgSource(currentFamily, currentStyle, ic.name);
+          if (svgSource) {
+            parent.postMessage(
+              { pluginMessage: { type: "insert-icon", svg: svgSource } },
+              "*"
+            );
+          }
+        });
+        frag.appendChild(cell);
+      }
+      iconGrid.innerHTML = "";
+      iconGrid.appendChild(frag);
+    }
+
+    async function loadIcons() {
+      setLoading(true);
+      try {
+        icons = await fetchJSON(BASE + "/icons.json");
+      } catch (e) {
+        setError("Failed to load icons: " + e.message);
+        return;
+      }
+      setLoading(false);
+      await loadSpriteAndRender();
+    }
+
+    async function loadSpriteAndRender() {
+      setLoading(true);
+      try {
+        await fetchSprite(currentFamily, currentStyle);
+      } catch (e) {
+        setError("Failed to load sprite: " + e.message);
+        return;
+      }
+      setLoading(false);
+      renderGrid();
+    }
+
+    familySelect.addEventListener("change", function () {
+      currentFamily = this.value;
+      loadSpriteAndRender();
+    });
+
+    styleSelect.addEventListener("change", function () {
+      currentStyle = this.value;
+      loadSpriteAndRender();
+    });
+
+    searchInput.addEventListener("input", renderGrid);
+
+    document.getElementById("close").addEventListener("click", function () {
+      parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+    });
+
+    loadIcons();
+  </script>
+</body>
+</html>
