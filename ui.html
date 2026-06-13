@@ -188,7 +188,7 @@
 <body>
   <div class="header">
     <h1>Strange Icons</h1>
-    <span class="version-badge">v3.1</span>
+    <span class="version-badge">v3.2</span>
   </div>
 
   <div class="filters">
@@ -334,7 +334,8 @@
       var q = searchInput.value.toLowerCase().trim();
       var filtered = icons.filter(function (ic) { return ic.family === currentFamily; });
       if (q) {
-        filtered = filtered.filter(function (ic) { return ic.name.includes(q); });
+        var terms = q.split(/\s+/);
+        filtered = filtered.filter(function (ic) { return terms.every(function(t) { return ic.name.includes(t); }); });
       }
       if (!filtered.length) {
         iconGrid.innerHTML = "";
