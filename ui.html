@@ -188,7 +188,7 @@
 <body>
   <div class="header">
     <h1>Strange Icons</h1>
-    <span class="version-badge">v3.2</span>
+    <span class="version-badge">v3.3</span>
   </div>
 
   <div class="filters">
@@ -225,6 +225,7 @@
 
   <script>
     const BASE = "https://strangeicons.com";
+    const VERSION = "3.3";
     const FAMILIES = ["asklepios", "freud", "nightingale", "osler", "sandow", "turing"];
     const STYLES = ["bold", "duoline", "duotone", "fill", "light", "regular"];
 
@@ -290,7 +291,7 @@
     async function fetchSprite(family, style) {
       var key = family + "-" + style;
       if (spriteCache[key]) return spriteCache[key];
-      var url = BASE + "/sprites/" + key + ".svg";
+      var url = BASE + "/sprites/" + key + ".svg?v=" + encodeURIComponent(VERSION);
       var res = await fetch(url);
       if (!res.ok) throw new Error("HTTP " + res.status);
       var text = await res.text();
@@ -335,7 +336,13 @@
       var filtered = icons.filter(function (ic) { return ic.family === currentFamily; });
       if (q) {
         var terms = q.split(/\s+/);
-        filtered = filtered.filter(function (ic) { return terms.every(function(t) { return ic.name.includes(t); }); });
+        filtered = filtered.filter(function (ic) {
+          var values = [ic.name].concat(ic.aliases || []);
+          if (ic.category) values.push(ic.category);
+          return terms.every(function (term) {
+            return values.some(function (value) { return value.toLowerCase().includes(term); });
+          });
+        });
       }
       if (!filtered.length) {
         iconGrid.innerHTML = "";
@@ -389,7 +396,7 @@
     async function loadIcons() {
       setLoading(true);
       try {
-        icons = await fetchJSON(BASE + "/icons.json");
+        icons = await fetchJSON(BASE + "/icons.json?v=" + encodeURIComponent(VERSION));
       } catch (e) {
         setError("Failed to load icons");
         return;
